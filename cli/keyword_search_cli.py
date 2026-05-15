@@ -1,6 +1,8 @@
 
 import argparse
 import json
+import string
+from lib.search_utils import tokenizer, has_matching_token
 
 def main() -> None:
     json_file = open('data/movies.json') 
@@ -18,7 +20,12 @@ def main() -> None:
     result = []
 
     for movie in json_file_obj["movies"]:
-        if args.query.lower() in movie["title"].lower() and len(result) < 5:
+        translator = str.maketrans('', '', string.punctuation)
+
+        query = tokenizer(args.query)
+        movie_title = tokenizer(movie["title"])
+
+        if has_matching_token(query, movie_title) and len(result) < 5:
             result.append(movie)
 
     match args.command:
