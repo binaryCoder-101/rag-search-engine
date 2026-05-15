@@ -18,7 +18,7 @@ def main() -> None:
     result = []
 
     for movie in json_file_obj["movies"]:
-        if args.query in movie["title"] and len(result) < 5:
+        if args.query.lower() in movie["title"].lower() and len(result) < 5:
             result.append(movie)
 
     match args.command:
