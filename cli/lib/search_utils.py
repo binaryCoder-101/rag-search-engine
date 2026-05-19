@@ -1,5 +1,6 @@
 import string
 from nltk.stem import PorterStemmer
+import json
 
 def tokenizer(text):
     """Preprocess a string and return a list of clean tokens."""
@@ -26,3 +27,7 @@ def has_matching_token(query_tokens, title_tokens):
             if query_token in title_token:
                 return True
     return False
+
+def load_movies():
+    json_file = open('data/movies.json') 
+    return json.load(json_file)["movies"]
