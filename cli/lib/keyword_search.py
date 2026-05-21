@@ -1,8 +1,7 @@
-from .search_utils import tokenizer, load_movies
 from pickle import dump
 import string
 from nltk.stem import PorterStemmer
-from .search_utils import load_stopwords
+from .search_utils import SEARCH_LIMIT, load_movies, load_stopwords
 
 class InvertedIndex:
     def __init__(self):
@@ -34,11 +33,26 @@ class InvertedIndex:
         with open("cache/docmap.pkl", "wb") as file:
             dump(self.docmap, file)
 
-def search_command():
-    pass
 
-def build_command():
-    pass
+def search_command(query: str, limit: int = SEARCH_LIMIT) -> list[dict]:
+    movies = load_movies()
+    results = []
+    for movie in movies:
+        query_tokens = tokenizer(query)
+        title_tokens = tokenizer(movie["title"])
+        if has_matching_token(query_tokens, title_tokens) and len(results) < limit:
+            results.append(movie)
+
+    return results
+
+
+def build_command() -> None:
+    inverted_index = InvertedIndex()
+    inverted_index.build()
+    inverted_index.save()
+    docs = inverted_index.get_documents("merida")
+    print(f"First document for token 'merida' = {docs[0]}")
+
 
 def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
     """Checks if at least one token from the query matches any part of a token from the title."""

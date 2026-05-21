@@ -1,7 +1,7 @@
 
 import argparse
 from lib.search_utils import load_movies
-from lib.keyword_search import tokenizer, InvertedIndex, has_matching_token
+from lib.keyword_search import tokenizer, InvertedIndex, has_matching_token, build_command, search_command
 
 def main() -> None: 
 
@@ -17,21 +17,14 @@ def main() -> None:
 
     match args.command:
         case "search":
-            movies = load_movies()
-            results = []
-            for movie in movies:
-                query = tokenizer(args.query)
-                movie_title = tokenizer(movie["title"])
-                if has_matching_token(query, movie_title) and len(results) < 5:
-                    results.append(movie)
-            print(f"Searching for: {args.query}")
-            for movie in results:
-                print(f"- {movie['title']}")
+            print("Searching for:", args.query)
+            results = search_command(args.query)
+            for i, res in enumerate(results, 1):
+                print(f"{i}. ({res['id']}) {res['title']}")
         case "build":
-            inverted_index = InvertedIndex()
-            inverted_index.build()
-            inverted_index.save()
-            print(f"{inverted_index.get_documents('merida')[0]}")
+            print("Building inverted index...")
+            build_command()
+            print("Inverted index built successfully.")
         case _:
             parser.print_help()
 
