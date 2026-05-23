@@ -1,4 +1,4 @@
-from pickle import dump
+from pickle import dump, load
 import string
 from nltk.stem import PorterStemmer
 from .search_utils import SEARCH_LIMIT, load_movies, load_stopwords
@@ -33,8 +33,19 @@ class InvertedIndex:
         with open("cache/docmap.pkl", "wb") as file:
             dump(self.docmap, file)
 
+    def load(self):
+        with open("cache/index.pkl", "rb") as file:
+            self.index = load(file)
+        with open("cache/docmap.pkl", "rb") as file:
+            self.docmap = load(file)
 
 def search_command(query: str, limit: int = SEARCH_LIMIT) -> list[dict]:
+    idx = InvertedIndex()
+    try:
+        idx.load()
+    except FileNotFoundError:
+        print("Pickle file doesn't exist")
+        return
     movies = load_movies()
     results = []
     for movie in movies:
@@ -47,10 +58,10 @@ def search_command(query: str, limit: int = SEARCH_LIMIT) -> list[dict]:
 
 
 def build_command() -> None:
-    inverted_index = InvertedIndex()
-    inverted_index.build()
-    inverted_index.save()
-    docs = inverted_index.get_documents("merida")
+    idx = InvertedIndex()
+    idx.build()
+    idx.save()
+    docs = idx.get_documents("merida")
     print(f"First document for token 'merida' = {docs[0]}")
 
 
