@@ -41,18 +41,24 @@ class InvertedIndex:
 
 def search_command(query: str, limit: int = SEARCH_LIMIT) -> list[dict]:
     idx = InvertedIndex()
+    
     try:
         idx.load()
     except FileNotFoundError:
         print("Pickle file doesn't exist")
         return
-    movies = load_movies()
+
+    query_tokens = tokenizer(query)
     results = []
-    for movie in movies:
-        query_tokens = tokenizer(query)
-        title_tokens = tokenizer(movie["title"])
-        if has_matching_token(query_tokens, title_tokens) and len(results) < limit:
-            results.append(movie)
+    for token in query_tokens:
+        matching_ids = idx.index.get(token, [])
+        for doc_id in matching_ids:
+            results.append(doc_id)
+            if len(results) >= 5:
+                break
+        if len(results) >= 5:
+            break
+        
 
     return results
 
@@ -67,6 +73,7 @@ def build_command() -> None:
 
 def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
     """Checks if at least one token from the query matches any part of a token from the title."""
+    
     for query_token in query_tokens:
         for title_token in title_tokens:
             if query_token in title_token:
