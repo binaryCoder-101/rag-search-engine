@@ -16,7 +16,7 @@ class InvertedIndex:
             self.index[token].add(doc_id)
 
     def get_documents(self, term):
-        doc_ids = list(self.index[term])
+        doc_ids = list(self.index.get(term, set()))
         doc_ids.sort()
         return doc_ids
     
@@ -49,26 +49,28 @@ def search_command(query: str, limit: int = SEARCH_LIMIT) -> list[dict]:
         return
 
     query_tokens = tokenizer(query)
-    results = []
+    result_doc_id = []
     for token in query_tokens:
-        matching_ids = idx.index.get(token, [])
+        matching_ids = idx.get_documents(token)
         for doc_id in matching_ids:
-            results.append(doc_id)
-            if len(results) >= 5:
+            result_doc_id.append(doc_id)
+            if len(result_doc_id) >= limit:
                 break
-        if len(results) >= 5:
+        if len(result_doc_id) >= limit:
             break
-        
 
-    return results
+    result_movies = []
+    for doc_id in result_doc_id:
+        result_movies.append(idx.docmap.get(doc_id))
+
+    return result_movies
 
 
 def build_command() -> None:
     idx = InvertedIndex()
     idx.build()
     idx.save()
-    docs = idx.get_documents("merida")
-    print(f"First document for token 'merida' = {docs[0]}")
+    print(idx.get_documents("brave"))
 
 
 def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
