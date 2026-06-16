@@ -1,7 +1,6 @@
 
 import argparse
-from lib.search_utils import load_movies
-from lib.keyword_search import tokenizer, InvertedIndex, has_matching_token, build_command, search_command
+from lib.keyword_search import build_command, search_command, tf_command
 
 def main() -> None: 
 
@@ -12,6 +11,10 @@ def main() -> None:
     search_parser.add_argument("query", type=str, help="Search query")
 
     subparsers.add_parser("build", help="Creates inverse index and stores in pkl files")
+
+    tf_parser = subparsers.add_parser("tf", help="Give term frequency for a term in a document with given ID")
+    tf_parser.add_argument("doc_id", type=int, help="Document id")
+    tf_parser.add_argument("term", type=str, help="Term whose frequency is to be searched")
 
     args = parser.parse_args()
 
@@ -25,6 +28,9 @@ def main() -> None:
             print("Building inverted index...")
             build_command()
             print("Inverted index built successfully.")
+        case "tf":
+            tf = tf_command(args.doc_id, args.term)
+            print(f"Term frequency for term {args.term} in document {args.doc_id}: {tf}")
         case _:
             parser.print_help()
 
