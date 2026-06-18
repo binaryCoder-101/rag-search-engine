@@ -3,6 +3,7 @@ import string
 from nltk.stem import PorterStemmer
 from .search_utils import SEARCH_LIMIT, load_movies, load_stopwords
 from collections import Counter, defaultdict
+import math
 
 class InvertedIndex:
     def __init__(self):
@@ -19,7 +20,6 @@ class InvertedIndex:
             self.index[token].add(doc_id)
             token_count[token] += 1
         self.term_frequencies[doc_id] = token_count
-        print(doc_id, token_count)
 
     def get_documents(self, term):
         doc_ids = list(self.index.get(term, set()))
@@ -28,6 +28,12 @@ class InvertedIndex:
     
     def get_tf(self, doc_id, term) -> int:
         return self.term_frequencies[doc_id][term]
+
+    def get_idf(self, term) -> float:
+        total_doc_count = len(self.docmap)
+        term_match_doc_count = len(self.index[term])
+        
+        return math.log((total_doc_count + 1) / (term_match_doc_count + 1))
 
     def build(self):
         movies_json = load_movies()
@@ -88,11 +94,19 @@ def tf_command(doc_id: int, term: str) -> int:
 
     return tf
 
+def idf_command(term: str) -> float:
+    idx = InvertedIndex()
+    idx.load()
+
+    tokenized_term = single_term_tokenizer(term)
+    idf = idx.get_idf(tokenized_term)
+
+    return idf
+
 def build_command() -> None:
     idx = InvertedIndex()
     idx.build()
     idx.save()
-    print(idx.get_documents("brave"))
 
 def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool:
     """Checks if at least one token from the query matches any part of a token from the title."""
@@ -103,22 +117,33 @@ def has_matching_token(query_tokens: list[str], title_tokens: list[str]) -> bool
                 return True
     return False
 
+def preprocess_text(text: str) -> str:
+    text = text.lower()
+    text = text.translate(str.maketrans("", "", string.punctuation))
+    return text
+
 def tokenizer(text: str) -> list[str]:
     """Preprocess a string and return a list of clean tokens."""
 
-    translator = str.maketrans('', '', string.punctuation)
-    tokens = text.translate(translator).lower().split()
+    text = preprocess_text(text)
+    tokens = text.split()
+    valid_tokens = []
+    for token in tokens:
+        if token:
+            valid_tokens.append(token)
 
+    filtered_words = []
     stop_words = load_stopwords()
-    
-    stemmer = PorterStemmer()
-    for index, token in enumerate(tokens):
-        if token in stop_words:
-            tokens.remove(token)
-            continue
-        tokens[index] = stemmer.stem(token)
+    for word in valid_tokens:
+        if word not in stop_words:
+            filtered_words.append(word)
 
-    return tokens
+    stemmer = PorterStemmer()
+    stemmed_words = []
+    for word in filtered_words:
+        stemmed_words.append(stemmer.stem(word))
+
+    return stemmed_words
 
 def single_term_tokenizer(term: str) -> str:
     result = tokenizer(term)
