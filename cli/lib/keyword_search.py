@@ -103,6 +103,16 @@ def idf_command(term: str) -> float:
 
     return idf
 
+def tfidf_command(doc_id: int, term: str) -> float:
+    idx = InvertedIndex()
+    idx.load()
+
+    tokenized_term = single_term_tokenizer(term)
+    tf = idx.get_tf(doc_id, tokenized_term)
+    idf = idx.get_idf(tokenized_term)
+
+    return tf * idf
+
 def build_command() -> None:
     idx = InvertedIndex()
     idx.build()
