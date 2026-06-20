@@ -35,6 +35,12 @@ class InvertedIndex:
         
         return math.log((total_doc_count + 1) / (term_match_doc_count + 1))
 
+    def get_bm25_idf(self, term: str) -> float:
+        N = len(self.docmap)        #Total number of documents in the corpus
+        df = len(self.index[term])  #Document frequency (number of documents containing term)
+        
+        return math.log((N - df + 0.5) / (df + 0.5) + 1)
+
     def build(self):
         movies_json = load_movies()
         for movie in movies_json:
@@ -112,6 +118,15 @@ def tfidf_command(doc_id: int, term: str) -> float:
     idf = idx.get_idf(tokenized_term)
 
     return tf * idf
+
+def bm25_idf_command(term: str) -> float:
+    idx = InvertedIndex()
+    idx.load()
+
+    tokenized_term = single_term_tokenizer(term)
+    bm25_idf = idx.get_bm25_idf(tokenized_term)
+
+    return bm25_idf
 
 def build_command() -> None:
     idx = InvertedIndex()
