@@ -1,7 +1,7 @@
 from pickle import dump, load
 import string
 from nltk.stem import PorterStemmer
-from .search_utils import SEARCH_LIMIT, BM25_K1, load_movies, load_stopwords
+from .search_utils import SEARCH_LIMIT, BM25_K1, BM25_B, load_movies, load_stopwords
 from collections import Counter, defaultdict
 import math
 
@@ -10,6 +10,7 @@ class InvertedIndex:
         self.index = {}
         self.docmap = {}
         self.term_frequencies = defaultdict(Counter)
+        self.doc_lengths = {}
 
     def __add_document(self, doc_id, input_text):
         input_tokens = tokenizer(input_text)
@@ -20,6 +21,7 @@ class InvertedIndex:
             self.index[token].add(doc_id)
             token_count[token] += 1
         self.term_frequencies[doc_id] = token_count
+        self.doc_lengths[doc_id] = len(input_tokens)
 
     def get_documents(self, term):
         doc_ids = list(self.index.get(term, set()))
@@ -41,10 +43,24 @@ class InvertedIndex:
         
         return math.log((N - df + 0.5) / (df + 0.5) + 1)
 
-    def get_bm25_tf(self, doc_id: int, term: str, k1:int=BM25_K1) -> float:
+    def get_bm25_tf(self, doc_id: int, term: str, k1:int=BM25_K1, b:int=BM25_B) -> float:
         tf = self.get_tf(doc_id, term)
+        doc_length = self.doc_lengths[doc_id]
+        avg_doc_length = self.__get_avg_doc_length()
+        length_norm = 1 - b + b * (doc_length / avg_doc_length)
+        bm25_tf = (tf * (k1 + 1)) / (tf + k1 * length_norm)
 
-        return (tf * (k1 + 1)) / (tf + k1)
+        return bm25_tf
+
+    def __get_avg_doc_length(self) -> float:
+        num_docs = len(self.doc_lengths)
+        if num_docs == 0:
+            return 0.0
+        sum = 0
+        for doc_id in self.doc_lengths:
+            sum += self.doc_lengths[doc_id]
+
+        return sum/num_docs
 
     def build(self):
         movies_json = load_movies()
@@ -61,6 +77,8 @@ class InvertedIndex:
             dump(self.docmap, file)
         with open("cache/term_frequencies.pkl", "wb") as file:
             dump(self.term_frequencies, file)
+        with open("cache/doc_lengths.pkl", "wb") as file:
+            dump(self.doc_lengths, file)
 
     def load(self):
         with open("cache/index.pkl", "rb") as file:
@@ -69,6 +87,8 @@ class InvertedIndex:
             self.docmap = load(file)
         with open("cache/term_frequencies.pkl", "rb") as file:
             self.term_frequencies = load(file)
+        with open("cache/doc_lengths.pkl", "rb") as file:
+            self.doc_lengths = load(file)
 
 def search_command(query: str, limit: int = SEARCH_LIMIT) -> list[dict]:
     idx = InvertedIndex()
