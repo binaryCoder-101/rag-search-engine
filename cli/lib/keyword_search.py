@@ -12,7 +12,7 @@ class InvertedIndex:
         self.term_frequencies = defaultdict(Counter)
         self.doc_lengths = {}
 
-    def __add_document(self, doc_id, input_text):
+    def __add_document(self, doc_id: int, input_text: str) -> None:
         input_tokens = tokenizer(input_text)
         token_count = Counter()
         for token in input_tokens:
@@ -22,6 +22,9 @@ class InvertedIndex:
             token_count[token] += 1
         self.term_frequencies[doc_id] = token_count
         self.doc_lengths[doc_id] = len(input_tokens)
+
+    def get_document_content(self, doc_id: int):
+        return self.docmap[doc_id]
 
     def get_documents(self, term):
         doc_ids = list(self.index.get(term, set()))
@@ -51,6 +54,28 @@ class InvertedIndex:
         bm25_tf = (tf * (k1 + 1)) / (tf + k1 * length_norm)
 
         return bm25_tf
+
+    def bm25(self, doc_id: int, term: str) -> float:
+        bm25_tf = self.get_bm25_tf(doc_id, term)
+        bm25_idf = self.get_bm25_idf(term)
+
+        return bm25_tf * bm25_idf
+
+    def bm25_search(self, query: str, limit: int) -> dict:
+        query_tokens = tokenizer(query)
+        scores = {}
+
+        for doc_id in self.docmap:
+            doc_score = 0
+            for token in query_tokens:
+                bm25_score = self.bm25(doc_id, token)
+                doc_score += bm25_score
+            scores[doc_id] = doc_score
+        
+        sorted_scores = dict(sorted(scores.items(), key=lambda item: item[1], reverse=True))
+        top_limit_scores = dict(list(sorted_scores.items())[:limit])
+
+        return top_limit_scores
 
     def __get_avg_doc_length(self) -> float:
         num_docs = len(self.doc_lengths)
@@ -89,6 +114,11 @@ class InvertedIndex:
             self.term_frequencies = load(file)
         with open("cache/doc_lengths.pkl", "rb") as file:
             self.doc_lengths = load(file)
+
+def document_content_command(doc_id: int):
+    idx = InvertedIndex()
+    idx.load()
+    return idx.get_document_content(doc_id)
 
 def search_command(query: str, limit: int = SEARCH_LIMIT) -> list[dict]:
     idx = InvertedIndex()
@@ -161,6 +191,14 @@ def bm25_tf_command(doc_id: int, term: str, k1:int=BM25_K1) -> float:
     bm25_tf = idx.get_bm25_tf(doc_id, tokenized_term, k1)
 
     return bm25_tf
+
+def bm25_search_command(query: str, limit: int=5) -> dict:
+    idx = InvertedIndex()
+    idx.load()
+
+
+    print(idx.bm25_search(query, limit))
+    return idx.bm25_search(query, limit)
 
 def build_command() -> None:
     idx = InvertedIndex()
