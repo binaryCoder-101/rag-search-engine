@@ -68,7 +68,7 @@ def main() -> None:
             bm25_search = bm25_search_command(args.query, args.limit)
             for count, movie_id in enumerate(bm25_search, start=1):
                 movie_details = document_content_command(movie_id)
-                print(f"{count}. ({movie_id}) {movie_details['title']} - Score: {bm25_search[movie_id]:.2f}")
+                print(f"{count}. ({movie_id}) {movie_details['title']} - Score: {bm25_search[movie_id]}")
         case _:
             parser.print_help()
 

@@ -66,7 +66,7 @@ class InvertedIndex:
         scores = {}
 
         for doc_id in self.docmap:
-            doc_score = 0
+            doc_score = 0.0
             for token in query_tokens:
                 bm25_score = self.bm25(doc_id, token)
                 doc_score += bm25_score
