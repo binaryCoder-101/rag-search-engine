@@ -1,7 +1,7 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
-from .search_utils import load_movies
+from .search_utils import load_movies, SEARCH_LIMIT
 
 class SemanticSearch:
     def __init__(self):
@@ -38,6 +38,32 @@ class SemanticSearch:
                 return self.embeddings
         return self.build_embeddings(documents)
     
+    def search(self, query, limit):
+        if self.embeddings is None:
+            raise ValueError("No embeddings loaded. Call `load_or_create_embeddings` first.")
+
+        query_embedding = self.generate_embedding(query)
+
+        similarity_scores = []
+
+        for i, movie_embedding in enumerate(self.embeddings):
+            similarity_score = cosine_similarity(query_embedding, movie_embedding)
+            similarity_scores.append((similarity_score, self.documents[i]))
+
+        similarity_scores.sort(key=lambda x: x[0], reverse=True)
+
+        results = []
+
+        for movie_score_data in similarity_scores[:limit]:
+            data = {"score": movie_score_data[0],
+                    "title": movie_score_data[1]['title'],
+                    "description": movie_score_data[1]['description']
+                    }
+            
+            results.append(data)
+
+        return results
+
 def verify_model():
     ss = SemanticSearch()
     print(f"Model loaded: {ss.model}")
@@ -64,4 +90,25 @@ def embed_query_text(query: str):
 
     print(f"Query: {query}")
     print(f"First 3 dimensions: {embedding[:3]}")
-    print(f"Shape: {embedding.shape}")
+
+def cosine_similarity(vec1: np.ndarray, vec2: np.ndarray) -> float:
+    dot_product = np.dot(vec1, vec2)
+    norm1 = np.linalg.norm(vec1)
+    norm2 = np.linalg.norm(vec2)
+
+    if norm1 == 0 or norm2 == 0:
+        return 0.0
+
+    return dot_product / (norm1 * norm2)
+
+def search_command(query: str, limit: int=SEARCH_LIMIT) -> None:
+    ss = SemanticSearch()
+    documents = load_movies()
+    embeddings = ss.load_or_create_embeddings(documents)
+
+    search_results = ss.search(query, limit)
+
+    for i, result in enumerate(search_results):
+        print(f"{i}. {result['title']} (score: {result['score']:.4f})")
+        print(f"{result['description'][:100]}...")
+        print("\n")
