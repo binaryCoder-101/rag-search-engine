@@ -1,7 +1,7 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
-from .search_utils import load_movies, SEARCH_LIMIT, DEFAULT_CHUNK_SIZE
+from .search_utils import load_movies, SEARCH_LIMIT, DEFAULT_CHUNK_SIZE, DEFAULT_OVERLAP_SIZE
 
 class SemanticSearch:
     def __init__(self):
@@ -113,28 +113,24 @@ def search_command(query: str, limit: int=SEARCH_LIMIT) -> None:
         print(f"{result['description'][:100]}...")
         print("\n")
 
-def chunk_command(text: str, size: int=DEFAULT_CHUNK_SIZE):
+def chunk_command(text: str, size: int=DEFAULT_CHUNK_SIZE, overlap: int=DEFAULT_OVERLAP_SIZE):
     words = text.split(" ")
     print(f"Chunking {len(text)} characters")
+    
     chunks = []
-    current = []
-    for word in words:
-        current.append(word)
-        if len(current) == size:
-            chunks.append(" ".join(current))
-            current = []
-    # don't forget the leftovers!
-    if current:
-        chunks.append(" ".join(current))
+    start = 0
+
+    while start < len(words):
+        end = start + size
+
+        current = words[start:end]
+
+        chunk = " ".join(current)
+
+        chunks.append(chunk)
+
+        start += size - overlap
     
     for i, chunk in enumerate(chunks, 1):
         print(f"{i}. {chunk}")
-    # for word in split_text:
-    #     sentence = ""
-    #     word_count = 0
-    #     line_count = 0
-    #     if word_count <= size:
-    #         sentence += " " + word
-    #         word_count += 1
-    #     line_count += 1
-    #     print(f"{line_count}. {sentence}")
+    
