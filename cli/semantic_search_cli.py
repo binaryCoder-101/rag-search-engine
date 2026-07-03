@@ -1,6 +1,6 @@
 import argparse
-from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text, search_command, chunk_command
-from lib.search_utils import SEARCH_LIMIT, DEFAULT_CHUNK_SIZE, DEFAULT_OVERLAP_SIZE
+from lib.semantic_search import verify_model, embed_text, verify_embeddings, embed_query_text, search_command, chunk_command ,semantic_chunk_command
+from lib.search_utils import SEARCH_LIMIT, DEFAULT_CHUNK_SIZE, DEFAULT_OVERLAP_SIZE, MAX_SIZE_SEMANTIC_CHUNK
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Semantic Search CLI")
@@ -20,10 +20,15 @@ def main() -> None:
     search_parser.add_argument("query", type=str, help="query")
     search_parser.add_argument("--limit", type=int, nargs='?', default=SEARCH_LIMIT, help="Search result limit")
     
-    chunk_parser = subparsers.add_parser("chunk", help="Semantic search command")
+    chunk_parser = subparsers.add_parser("chunk", help="Chunk command")
     chunk_parser.add_argument("text", type=str, help="query")
     chunk_parser.add_argument("--chunk-size", type=int, nargs='?', default=DEFAULT_CHUNK_SIZE, help="Search result limit")
     chunk_parser.add_argument("--overlap", type=int, nargs='?', default=DEFAULT_OVERLAP_SIZE, help="Size of chunking overlap")
+    
+    semantic_chunk_parser = subparsers.add_parser("semantic_chunk", help="Semantic chunk command")
+    semantic_chunk_parser.add_argument("text", type=str, help="query")
+    semantic_chunk_parser.add_argument("--max-chunk-size", type=int, nargs='?', default=MAX_SIZE_SEMANTIC_CHUNK, help="Search result limit")
+    semantic_chunk_parser.add_argument("--overlap", type=int, nargs='?', default=DEFAULT_OVERLAP_SIZE, help="Size of semantic chunking overlap")
 
     args = parser.parse_args()
 
@@ -40,6 +45,8 @@ def main() -> None:
             search_command(args.query, args.limit)
         case "chunk":
             chunk_command(args.text, args.chunk_size, args.overlap)
+        case "semantic_chunk":
+            semantic_chunk_command(args.text, args.max_chunk_size, args.overlap)
 
 if __name__ == "__main__":
     main()

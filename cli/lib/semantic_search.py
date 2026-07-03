@@ -1,7 +1,8 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
-from .search_utils import load_movies, SEARCH_LIMIT, DEFAULT_CHUNK_SIZE, DEFAULT_OVERLAP_SIZE
+from .search_utils import load_movies, SEARCH_LIMIT, DEFAULT_CHUNK_SIZE, DEFAULT_OVERLAP_SIZE, MAX_SIZE_SEMANTIC_CHUNK
+import re
 
 class SemanticSearch:
     def __init__(self):
@@ -134,3 +135,26 @@ def chunk_command(text: str, size: int=DEFAULT_CHUNK_SIZE, overlap: int=DEFAULT_
     for i, chunk in enumerate(chunks, 1):
         print(f"{i}. {chunk}")
     
+def semantic_chunk_command(text: str, size: int=MAX_SIZE_SEMANTIC_CHUNK, overlap: int=DEFAULT_OVERLAP_SIZE):
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    print(f"Semantically chunking {len(text)} characters")
+
+    chunks = []
+    start = 0
+
+    while start < len(sentences):
+        end = start + size
+
+        current = sentences[start:end]
+
+        if chunks and len(current) <= overlap:
+            break
+
+        chunk = " ".join(current)
+
+        chunks.append(chunk)
+
+        start += size - overlap
+    
+    for i, chunk in enumerate(chunks, 1):
+        print(f"{i}. {chunk}")

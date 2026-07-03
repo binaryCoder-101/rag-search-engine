@@ -5,6 +5,7 @@ BM25_K1 = 1.5
 BM25_B = 0.75
 DEFAULT_CHUNK_SIZE = 200
 DEFAULT_OVERLAP_SIZE = 0
+MAX_SIZE_SEMANTIC_CHUNK = 4
 
 def load_movies() -> list[dict]:
     json_file = open('data/movies.json') 
