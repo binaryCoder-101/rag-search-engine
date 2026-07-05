@@ -11,3 +11,7 @@ wheels/
 
 # Data
 /data/
+
+
+#  Cache
+/cache/
