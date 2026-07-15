@@ -228,27 +228,43 @@ def chunk_command(text: str, size: int=DEFAULT_CHUNK_SIZE, overlap: int=DEFAULT_
         print(f"{i}. {chunk}")
     
 def semantic_chunk_command(text: str, size: int=MAX_SIZE_SEMANTIC_CHUNK, overlap: int=DEFAULT_OVERLAP_SIZE):
-    sentences = re.split(r"(?<=[.!?])\s+", text)
+    cleaned_text = text.strip()
+
+    if not cleaned_text:
+        return []
+    
+    sentences = re.split(r"(?<=[.!?])\s+", cleaned_text)
+    
+    if len(sentences) == 1 and not cleaned_text.endswith(('?', '!', '.')):
+        sentences = [cleaned_text]
 
     chunks = []
     start = 0
 
     while start < len(sentences):
         end = start + size
-
         current = sentences[start:end]
-
-        if chunks and len(current) <= overlap:
+        if chunks and len(stripped_list) <= overlap:
             break
 
-        chunk = " ".join(current)
+        if not current:
+            break
 
-        chunks.append(chunk)
-
+        stripped_list = []
+        for s in current:
+            s = s.strip()
+            if s:
+                stripped_list.append(s)
+        if not stripped_list:
+            start -= size - overlap
+            continue
+        chunk = " ".join(stripped_list)
+        if chunk:
+            chunks.append(chunk)
         start += size - overlap
     
-
-    return chunks
+    for i, chunk in enumerate(chunks):
+        print(f"{i + 1}. {chunk}")
 
 
 def embed_chunks_command():
