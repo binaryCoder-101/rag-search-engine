@@ -65,10 +65,10 @@ def main() -> None:
             bm25_tf = bm25_tf_command(args.doc_id, args.term, args.k1)
             print(f"BM25 TF score of '{args.term}' in document '{args.doc_id}': {bm25_tf:.2f}")
         case "bm25search":
-            bm25_search = bm25_search_command(args.query, args.limit)
-            for count, movie_id in enumerate(bm25_search, start=1):
-                movie_details = document_content_command(movie_id)
-                print(f"{count}. ({movie_id}) {movie_details['title']} - Score: {bm25_search[movie_id]}")
+            print("Searching for:", args.query)
+            results = bm25_search_command(args.query)
+            for i, res in enumerate(results, 1):
+                print(f"{i}. ({res['id']}) {res['title']} - Score: {res['score']:.2f}")
         case _:
             parser.print_help()
 

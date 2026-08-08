@@ -1,7 +1,7 @@
 from pickle import dump, load
 import string
 from nltk.stem import PorterStemmer
-from .search_utils import SEARCH_LIMIT, BM25_K1, BM25_B, load_movies, load_stopwords
+from .search_utils import SEARCH_LIMIT, BM25_K1, BM25_B, load_movies, load_stopwords, format_search_result, SearchResult
 from collections import Counter, defaultdict
 import math
 
@@ -11,6 +11,10 @@ class InvertedIndex:
         self.docmap = {}
         self.term_frequencies = defaultdict(Counter)
         self.doc_lengths = {}
+        self.index_path = "cache/index.pkl"
+        self.docmap_path = "cache/docmap.pkl"
+        self.tf_path = "cache/term_frequencies.pkl"
+        self.doc_lengths_path = "cache/doc_lengths.pkl"
 
     def __add_document(self, doc_id: int, input_text: str) -> None:
         input_tokens = tokenizer(input_text)
@@ -61,21 +65,32 @@ class InvertedIndex:
 
         return bm25_tf * bm25_idf
 
-    def bm25_search(self, query: str, limit: int) -> dict:
+    def bm25_search(
+        self, query: str, limit: int = SEARCH_LIMIT
+    ) -> list[SearchResult]:
         query_tokens = tokenizer(query)
-        scores = {}
 
+        scores: dict[int, float] = {}
         for doc_id in self.docmap:
-            doc_score = 0.0
+            score = 0.0
             for token in query_tokens:
-                bm25_score = self.bm25(doc_id, token)
-                doc_score += bm25_score
-            scores[doc_id] = doc_score
-        
-        sorted_scores = dict(sorted(scores.items(), key=lambda item: item[1], reverse=True))
-        top_limit_scores = dict(list(sorted_scores.items())[:limit])
+                score += self.bm25(doc_id, token)
+            scores[doc_id] = score
 
-        return top_limit_scores
+        sorted_docs = sorted(scores.items(), key=lambda x: x[1], reverse=True)
+
+        results: list[SearchResult] = []
+        for doc_id, score in sorted_docs[:limit]:
+            doc = self.docmap[doc_id]
+            formatted_result = format_search_result(
+                doc_id=doc["id"],
+                title=doc["title"],
+                document=doc["description"],
+                score=score,
+            )
+            results.append(formatted_result)
+
+        return results
 
     def __get_avg_doc_length(self) -> float:
         num_docs = len(self.doc_lengths)
@@ -96,23 +111,23 @@ class InvertedIndex:
             self.docmap[movie["id"]] = movie
 
     def save(self):
-        with open("cache/index.pkl", "wb") as file:
+        with open(self.index_path, "wb") as file:
             dump(self.index, file)
-        with open("cache/docmap.pkl", "wb") as file:
+        with open(self.docmap_path, "wb") as file:
             dump(self.docmap, file)
-        with open("cache/term_frequencies.pkl", "wb") as file:
+        with open(self.tf_path, "wb") as file:
             dump(self.term_frequencies, file)
-        with open("cache/doc_lengths.pkl", "wb") as file:
+        with open(self.doc_lengths_path, "wb") as file:
             dump(self.doc_lengths, file)
 
     def load(self):
-        with open("cache/index.pkl", "rb") as file:
+        with open(self.index_path, "rb") as file:
             self.index = load(file)
-        with open("cache/docmap.pkl", "rb") as file:
+        with open(self.docmap_path, "rb") as file:
             self.docmap = load(file)
-        with open("cache/term_frequencies.pkl", "rb") as file:
+        with open(self.tf_path, "rb") as file:
             self.term_frequencies = load(file)
-        with open("cache/doc_lengths.pkl", "rb") as file:
+        with open(self.doc_lengths_path, "rb") as file:
             self.doc_lengths = load(file)
 
 def document_content_command(doc_id: int):
@@ -192,12 +207,9 @@ def bm25_tf_command(doc_id: int, term: str, k1:int=BM25_K1) -> float:
 
     return bm25_tf
 
-def bm25_search_command(query: str, limit: int=5) -> dict:
+def bm25_search_command(query: str, limit: int=SEARCH_LIMIT) -> list[SearchResult]:
     idx = InvertedIndex()
     idx.load()
-
-
-    print(idx.bm25_search(query, limit))
     return idx.bm25_search(query, limit)
 
 def build_command() -> None:

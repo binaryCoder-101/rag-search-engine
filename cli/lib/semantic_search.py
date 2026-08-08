@@ -1,7 +1,7 @@
 from sentence_transformers import SentenceTransformer
 import numpy as np
 import os
-from .search_utils import load_movies, SEARCH_LIMIT, DEFAULT_CHUNK_SIZE, DEFAULT_OVERLAP_SIZE, MAX_SIZE_SEMANTIC_CHUNK, format_search_result
+from .search_utils import load_movies, SEARCH_LIMIT, DEFAULT_CHUNK_SIZE, DEFAULT_OVERLAP_SIZE, MAX_SIZE_SEMANTIC_CHUNK, format_search_result, SearchResult
 import re
 import json
 
@@ -116,7 +116,7 @@ class ChunkedSemanticSearch(SemanticSearch):
         
         return self.build_chunk_embeddings(documents)
     
-    def search_chunks(self, query: str, limit: int = 10):
+    def search_chunks(self, query: str, limit: int = 10) -> list[SearchResult]:
         if self.chunk_embeddings is None:
             raise ValueError("No embeddings loaded. Call `load_or_create_chunk_embeddings` first.")
 
@@ -141,7 +141,7 @@ class ChunkedSemanticSearch(SemanticSearch):
 
         sorted_best_chunk_score = sorted(best_chunk_score.items(), key=lambda item: item[1], reverse=True)
 
-        results = []
+        results: list[SearchResult] = []
 
         for movie_idx, score in sorted_best_chunk_score[:limit]:
             doc = self.documents[movie_idx]
