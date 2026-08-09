@@ -9,6 +9,7 @@ DEFAULT_OVERLAP_SIZE = 0
 MAX_SIZE_SEMANTIC_CHUNK = 4
 SCORE_PRECISION = 3
 ALPHA = 0.5
+RRF_K = 60
 
 class SearchResult(TypedDict):
     id: int
