@@ -1,7 +1,8 @@
 import os
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 from .keyword_search import InvertedIndex
+from .query_enhancement import enhance_query
 from .semantic_search import ChunkedSemanticSearch
 from .search_utils import SEARCH_LIMIT, ALPHA, format_search_result, SearchResult, load_movies, RRF_K
 
@@ -13,6 +14,8 @@ class WeightedSearchCommandResult(TypedDict):
 
 class RRFSearchCommandResult(TypedDict):
     original_query: str
+    enhanced_query: str | None
+    enhance_method: Literal["spell"] | None
     query: str
     k: int
     results: list[SearchResult]
@@ -193,18 +196,24 @@ def weighted_search_command(
 def rrf_search_command(
     query: str,
     k: int = RRF_K,
+    enhance: Literal["spell"] | None = None,
     limit: int = SEARCH_LIMIT,
 ) -> RRFSearchCommandResult:
     movies = load_movies()
     searcher = HybridSearch(movies)
 
     original_query = query
-
+    enhanced_query = None
+    if enhance:
+        enhanced_query = enhance_query(query, method=enhance)
+        query = enhanced_query
     search_limit = limit
     results = searcher.rrf_search(query, k, search_limit)
 
     return {
         "original_query": original_query,
+        "enhanced_query": enhanced_query,
+        "enhance_method": enhance,
         "query": query,
         "k": k,
         "results": results,
